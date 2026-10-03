@@ -1,0 +1,17 @@
+services:
+  agent:
+    build: .
+    restart: unless-stopped
+    env_file: .env
+    ports:
+      - "127.0.0.1:8080:8080"
+    volumes:
+      - ./data:/app/data
+      - ./inbox:/app/inbox
+      - ./processed:/app/processed
+      - ./failed:/app/failed
+      - ./work:/app/work
+      - ./assets:/app/assets
+      - ./brand.json:/app/brand.json:ro
+    extra_hosts:
+      - "host.docker.internal:host-gateway"   # reach A1111/Forge running on your own PC

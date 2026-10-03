@@ -1,0 +1,10 @@
+node_modules
+dist
+.env
+data
+inbox
+processed
+failed
+work
+.git
+tests

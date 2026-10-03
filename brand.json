@@ -1,0 +1,57 @@
+{
+  "name": "REXION",
+  "what": "AI Career Platform helping students, job seekers, and developers land dream jobs and internships with smart resume scoring, match predictions, and real-time listings",
+  "audience": "College students, interns, developers, job seekers, and ambitious career switchers looking for top roles at Google, Microsoft, Amazon, Meta, and high-growth startups",
+  "voice": "Authentic, inspiring, warm, editorial, empathetic, intelligent. Short, clean sentences. Zero hype, zero cringe, zero fake promises.",
+  "pillars": [
+    "Smart Job & Internship Matching (Microsoft, Google, Meta, Amazon, startups)",
+    "Resume Analysis & AI Profile Optimization (ATS score, formatting, impact)",
+    "Career Education & Interview Strategy (how to land interviews, portfolio tips)",
+    "Student & Early Career Advice (internships, transition into tech)",
+    "REXION Product Demonstrations & Feature Spotlights (predictive chance, direct apply)"
+  ],
+  "primary_keywords": [
+    "internships",
+    "software engineer intern",
+    "career advice",
+    "resume tips",
+    "job search",
+    "ai career platform",
+    "tech jobs",
+    "college career"
+  ],
+  "cta_options": [
+    "Explore jobs on rexion.ai",
+    "Find your match on rexion.ai",
+    "Analyze your resume on rexion.ai",
+    "DM 'REXION' to get early beta access"
+  ],
+  "avoid": [
+    "fake stats or invented client results",
+    "promising guaranteed jobs or virality",
+    "more than 5 hashtags",
+    "engagement bait like 'like if you agree'",
+    "neon, dark cyberpunk, robots, glowing blue grids"
+  ],
+  "banned_phrases": [
+    "guaranteed",
+    "guaranteed 100k job",
+    "get hired overnight",
+    "100% results",
+    "like if you agree",
+    "follow for follow",
+    "revolutionary",
+    "world's first"
+  ],
+  "visual": {
+    "palette": {
+      "background": "0xFAF7F2",
+      "crimson": "0xDE6B48",
+      "gold": "0xC85A32",
+      "text": "0x1C1917"
+    },
+    "style": "Aesthetic warm editorial technology photograph, sunlit cozy wooden workspace with an open laptop displaying the REXION AI Career Platform dashboard, ceramic coffee mug with gentle steam, spiral notebook with handwritten checklist, small potted green plant, soft morning sunlight casting gentle shadows, warm cream and terracotta tones, premium startup aesthetic, 8k commercial photography",
+    "negative": "neon cyberpunk, glowing lasers, dark room, black background, purple blue gradients, robots, cartoon, 3d low poly, noisy, grainy, blurry, ugly, distorted, fake faces, watermarks, cluttered, PowerPoint slide, colored boxes"
+  },
+  "sample_captions": []
+}
