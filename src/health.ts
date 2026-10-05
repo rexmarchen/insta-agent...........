@@ -39,7 +39,7 @@ export function startHealthServer(handlers: HealthServerHandlers = {}) {
     }
 
     // Manual or External Cron Trigger: publish due posts
-    if (pathname === "/cron" || pathname === "/cron/publish") {
+    if (pathname === "/cron" || pathname === "/cron/publish" || pathname === "/cron/publish-reel") {
       try {
         log.info("HTTP cron trigger received: publishDue");
         const result = handlers.onPublishDue ? await handlers.onPublishDue() : { skipped: "No handler configured" };
