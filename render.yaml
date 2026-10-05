@@ -1,0 +1,49 @@
+services:
+  - type: web
+    name: rexeditzz-insta-agent
+    runtime: docker
+    dockerfilePath: ./Dockerfile
+    plan: free
+    autoDeploy: true
+    healthCheckPath: /health
+    envVars:
+      - key: PORT
+        value: 8080
+      - key: NODE_ENV
+        value: production
+      - key: TIMEZONE
+        value: Asia/Kolkata
+      - key: POST_SLOTS
+        value: 17:00,19:00
+      - key: POST_IMAGE_SLOT
+        value: 17:00
+      - key: POST_REEL_SLOT
+        value: 19:00
+      - key: MAX_POSTS_PER_DAY
+        value: "2"
+      - key: AUTOPILOT
+        value: "true"
+      - key: DRY_RUN
+        value: "false"
+      - key: ENABLE_GENERATION
+        value: "true"
+      - key: MAX_GENERATIONS_PER_DAY
+        value: "10"
+      - key: QUEUE_TARGET
+        value: "5"
+      - key: LOG_LEVEL
+        value: info
+      - key: IG_USER_ID
+        sync: false
+      - key: IG_ACCESS_TOKEN
+        sync: false
+      - key: GEMINI_API_KEY
+        sync: false
+      - key: TELEGRAM_BOT_TOKEN
+        sync: false
+      - key: TELEGRAM_CHAT_ID
+        sync: false
+      - key: CLOUDFLARE_ACCOUNT_ID
+        sync: false
+      - key: CLOUDFLARE_API_TOKEN
+        sync: false

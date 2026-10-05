@@ -1,6 +1,6 @@
 import fs from "node:fs/promises";
 import path from "node:path";
-import { env } from "../config.js";
+import { env, resolveBrandFont } from "../config.js";
 import { brand } from "../brand.js";
 import { ffmpeg } from "../media.js";
 
@@ -164,7 +164,7 @@ export function buildFilter(spec: ReelSpec, textFiles: string[], hasImageBg: boo
   const before = (t0: number) => t0 < spec.endCardAt;
   const drawBox = (b: BoxItem) => `drawbox=x=${b.x}:y=${b.y}:w=${b.w}:h=${b.h}:color=${b.color}:t=fill:enable='gte(t,${b.t0})'`;
   const drawText = (t: TextItem, i: number) =>
-    `drawtext=fontfile='${ffPath(env.BRAND_FONT)}':textfile='${ffPath(textFiles[i])}':fontsize=${t.size}:fontcolor=${t.color}:` +
+    `drawtext=fontfile='${ffPath(resolveBrandFont(env.BRAND_FONT))}':textfile='${ffPath(textFiles[i])}':fontsize=${t.size}:fontcolor=${t.color}:` +
     `shadowcolor=0x000000@0.15:shadowx=1:shadowy=1:x=${t.x}:y='${t.y}+12*(1-${ease(t.t0)})':alpha='${ease(t.t0)}':enable='gte(t,${t.t0})'`;
 
   spec.boxes.filter((b) => before(b.t0)).forEach((b) => parts.push(drawBox(b)));

@@ -183,12 +183,13 @@ export const getRecentChatHistory = (limit = 10): { role: string; content: strin
 export function ensureDefaultMemories() {
   const count = (db.prepare("SELECT COUNT(*) c FROM memories").get() as any)?.c ?? 0;
   if (count === 0) {
-    addMemory("Owner: Anshu. Instagram: @anshu._io. Business/Brand: REXEDITZZ (video editing, motion graphics, and tech studio).", "identity");
+    addMemory("Owner: Anshu. Instagram: @anshu._io. Business/Brand: REXION (AI Career Platform & Job Intelligence at rexion.ai).", "identity");
     addMemory("Rovia: Anshu's high-intelligence AI Instagram Executive, creative partner, and autonomous director.", "identity");
-    addMemory("Target Audience: Real estate agents, high-ticket brokers, and content creators looking for scroll-stopping video edits, reels, and higher lead conversions.", "audience");
+    addMemory("Target Audience: Tech job seekers, university students, software engineers, designers, and ambitious professionals looking for internships and dream careers.", "audience");
     addMemory("Brand Voice: Confident, sleek, modern, authoritative, zero cringe hype, max 2 emojis, strong hook in first line.", "voice");
-    addMemory("Visual Aesthetic: Dark, moody, cinematic, cool-toned blue-black lighting with subtle monitor glow, sharp geometric lines, crimson (#DC143C) and gold (#D4AF37) accents.", "visual");
-    addMemory("Autonomous Schedule: Everyday at 7:00 PM IST on Autopilot.", "schedule");
+    addMemory("Visual Aesthetic: Pure warm cream (#FAF7F2) and ivory, sunlit cozy wooden workspace desk, open laptop displaying clean REXION career dashboard, ceramic coffee mug with cute handwritten quotes, notebook checklist, warm terracotta accents (#DE6B48), dark charcoal typography (#1C1917), and elegant Georgia Bold serif typography. NEVER dark, NEVER cyberpunk, NEVER neon.", "visual");
+    addMemory("Autonomous Schedule: Everyday at 5:00 PM IST (Image) and 7:00 PM IST (Reel) on Autopilot.", "schedule");
+    addMemory("REXION is an AI career platform helping users with resumes, jobs, internships, profile improvements, LinkedIn automation, and career management. Visual identity: warm editorial technology aesthetic (cream, ivory, warm beige, mocha, deep brown, terracotta, muted coral, soft sage, charcoal; 70% warm neutral, 20% brown/charcoal, 10% accent). Premium editorial serif headlines, clean sans-serif body, realistic SaaS UI, human language, zero hype words.", "brand_guidelines");
   }
 }
 
@@ -250,24 +251,27 @@ export const updateProjectWhatsNew = (name: string, whats_new: string) => {
 };
 
 export function ensureDefaultProjects() {
-  upsertProject({
-    name: "rexionAI",
-    headline: "AI Future Predictor & Autonomous Website Builder",
-    target_audience: "Entrepreneurs, agency owners, creators, and developers",
-    problem_solved: "Eliminates weeks of tedious manual web building and uncertain forecasting by instantly generating websites and predicting market trends",
-    key_features: "AI Future Prediction Engine, Instant Autonomous Website Builder, Real-time Connection Pipelines",
-    whats_new: "New connections hub, lightning-fast website generation, predictive intelligence algorithms",
-    cta_link: "DM 'REXION' for exclusive beta access",
-  });
-  upsertProject({
-    name: "rexion",
-    headline: "AI Future Predictor & Autonomous Website Builder",
-    target_audience: "Entrepreneurs, agency owners, creators, and developers",
-    problem_solved: "Eliminates weeks of tedious manual web building and uncertain forecasting by instantly generating websites and predicting market trends",
-    key_features: "AI Future Prediction Engine, Instant Autonomous Website Builder, Real-time Connection Pipelines",
-    whats_new: "New connections hub, lightning-fast website generation, predictive intelligence algorithms",
-    cta_link: "DM 'REXION' for exclusive beta access",
-  });
+  const count = (db.prepare("SELECT COUNT(*) c FROM projects").get() as any)?.c ?? 0;
+  if (count === 0) {
+    upsertProject({
+      name: "rexionAI",
+      headline: "AI Career Platform: Smart Job & Internship Matching",
+      target_audience: "College students, tech interns, developers, and job seekers",
+      problem_solved: "Stops blind job applications; predicts match scores and connects directly to live tech roles at Google, Microsoft, Meta, and top startups",
+      key_features: "Smart Job Matching, Live Opportunities (<48h), Application Chance Prediction, Direct Apply Links, AI Resume Scorer",
+      whats_new: "Live internship radar, AI resume match prediction, 1-click direct apply links",
+      cta_link: "Explore jobs on rexion.ai",
+    });
+    upsertProject({
+      name: "REXION",
+      headline: "AI Career Platform: Smart Job & Internship Matching",
+      target_audience: "College students, tech interns, developers, and job seekers",
+      problem_solved: "Stops blind job applications; predicts match scores and connects directly to live tech roles at Google, Microsoft, Meta, and top startups",
+      key_features: "Smart Job Matching, Live Opportunities (<48h), Application Chance Prediction, Direct Apply Links, AI Resume Scorer",
+      whats_new: "Live internship radar, AI resume match prediction, 1-click direct apply links",
+      cta_link: "Explore jobs on rexion.ai",
+    });
+  }
 }
 
 // Seed on startup

@@ -1,15 +1,36 @@
 import "dotenv/config";
 import { z } from "zod";
 
+import fsSync from "node:fs";
+
 const bool = (def: string) =>
   z.string().default(def).transform((v) => ["true", "1", "yes", "on"].includes(v.toLowerCase()));
 
-const defaultFont =
+export const defaultFont =
   process.platform === "win32"
     ? "C:/Windows/Fonts/arialbd.ttf"
     : process.platform === "darwin"
       ? "/System/Library/Fonts/Supplemental/Arial Bold.ttf"
       : "/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf";
+
+export function resolveBrandFont(preferred?: string): string {
+  if (preferred && fsSync.existsSync(preferred)) return preferred;
+  const fallbacks = [
+    preferred,
+    "/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf",
+    "/usr/share/fonts/truetype/freefont/FreeSansBold.ttf",
+    "/usr/share/fonts/dejavu/DejaVuSans-Bold.ttf",
+    "C:/Windows/Fonts/georgiab.ttf",
+    "C:/Windows/Fonts/arialbd.ttf",
+    "C:/Windows/Fonts/arial.ttf",
+    "/System/Library/Fonts/Supplemental/Arial Bold.ttf",
+  ].filter(Boolean) as string[];
+
+  for (const f of fallbacks) {
+    if (fsSync.existsSync(f)) return f;
+  }
+  return defaultFont;
+}
 
 const schema = z.object({
   // Core AI Providers (at least one recommended)

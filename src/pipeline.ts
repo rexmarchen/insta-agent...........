@@ -93,15 +93,15 @@ export async function draftNew() {
 }
 
 /** Publishes the next approved post whose slot has arrived. */
-export async function publishDue() {
-  if (getSetting("paused") === "1") return;
+export async function publishDue(): Promise<{ published?: { id: number; kind: string; permalink: string }; skipped?: string }> {
+  if (getSetting("paused") === "1") return { skipped: "Publishing is paused in settings." };
   const approved = db.prepare("SELECT * FROM posts WHERE status = 'approved' ORDER BY scheduled_at").all() as Post[];
   const due = approved.find((p) => new Date(p.scheduled_at!) <= new Date());
-  if (!due) return;
+  if (!due) return { skipped: "No posts currently due." };
 
   // Claim it atomically so two ticks can never publish the same post.
   const claim = db.prepare("UPDATE posts SET status = 'publishing' WHERE id = ? AND status = 'approved'").run(due.id);
-  if (claim.changes !== 1) return;
+  if (claim.changes !== 1) return { skipped: `Post #${due.id} already being processed.` };
 
   try {
     // If the media URL expired (common with temporary file hosting) or is unreachable, re-upload from local disk
@@ -116,18 +116,24 @@ export async function publishDue() {
           due.media_url = fresh.url;
           due.cloud_id = fresh.publicId;
         }
+      } else {
+        const isAlive = await verifyMediaUrl(due.media_url);
+        if (!isAlive) {
+          throw new Error(`Media file ${due.src_path} is missing on disk and remote URL ${due.media_url} is unreachable.`);
+        }
       }
     }
 
     const r = await publishToInstagram(due);
     db.prepare("UPDATE posts SET status = 'published', ig_media_id = ?, permalink = ?, published_at = datetime('now') WHERE id = ?").run(r.id, r.permalink, due.id);
-    log.info({ post: due.id, media: r.id }, "published");
-    await notify(`🚀 Published #${due.id}\n${r.permalink}`);
+    log.info({ post: due.id, media: r.id, permalink: r.permalink }, "published");
+    await notify(`🚀 Published #${due.id} (${due.kind})\n${r.permalink}`);
+    return { published: { id: due.id, kind: due.kind, permalink: r.permalink } };
   } catch (e) {
     if (e instanceof QuotaError) {
       db.prepare("UPDATE posts SET status = 'approved', scheduled_at = ? WHERE id = ?").run(new Date(Date.now() + 30 * 60_000).toISOString(), due.id);
       log.warn({ post: due.id }, "publishing limit reached, postponed 30 min");
-      return;
+      return { skipped: `Quota limit reached for #${due.id}, postponed 30 min.` };
     }
     db.prepare("UPDATE posts SET status = 'failed', error = ? WHERE id = ?").run(errMsg(e), due.id);
     log.error({ post: due.id, err: errMsg(e) }, "publish failed");
@@ -137,6 +143,7 @@ export async function publishDue() {
     } else {
       await notify(`❌ Publishing #${due.id} failed: ${errMsg(e)}\nUse /retry ${due.id} to re-queue it.`);
     }
+    return { skipped: `Publishing #${due.id} failed: ${errMsg(e)}` };
   }
 }
 

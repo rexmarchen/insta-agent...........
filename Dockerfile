@@ -15,9 +15,10 @@ RUN apt-get update && apt-get install -y --no-install-recommends ffmpeg fonts-de
 COPY --from=build /app/node_modules ./node_modules
 COPY --from=build /app/dist ./dist
 COPY package.json brand.json ./
+COPY assets ./assets
 RUN mkdir -p data inbox processed failed work assets/music && chown -R node:node /app
 USER node
 EXPOSE 8080
 HEALTHCHECK --interval=60s --timeout=5s --start-period=30s CMD node -e "fetch('http://127.0.0.1:'+(process.env.PORT||8080)+'/health').then(r=>process.exit(r.ok?0:1)).catch(()=>process.exit(1))"
 ENTRYPOINT ["/usr/bin/tini", "--"]
-CMD ["node", "dist/index.js"]
+CMD ["node", "--experimental-sqlite", "dist/index.js"]

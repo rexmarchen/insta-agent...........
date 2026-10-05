@@ -10,6 +10,7 @@ import { AuthError, checkToken, refreshLongLivedToken } from "./instagram.js";
 import { createContent } from "./gen/creator.js";
 import { startHealthServer } from "./health.js";
 import { errMsg } from "./util.js";
+import { nextSlot } from "./scheduler.js";
 import { DateTime } from "luxon";
 
 const running = new Set<string>();
@@ -79,13 +80,18 @@ async function smartCreate() {
     else filledReelDays.add(dayKey);
   }
 
-  // Check tomorrow and beyond (skip today)
-  for (let d = 1; d <= lookAheadDays; d++) {
+  // Check today (if slots are still in the future) and tomorrow onwards
+  const currentHour = now.hour;
+  const imageSlotHour = Number((env.POST_IMAGE_SLOT || "17:00").split(":")[0]);
+  const reelSlotHour = Number((env.POST_REEL_SLOT || "19:00").split(":")[0]);
+  const startDay = currentHour < Math.max(imageSlotHour, reelSlotHour) ? 0 : 1;
+
+  for (let d = startDay; d <= lookAheadDays; d++) {
     const date = now.startOf("day").plus({ days: d });
     const dayKey = date.toISODate()!;
 
-    // Missing IMAGE slot? Generate a Rexion editorial photo post
-    if (!filledImageDays.has(dayKey)) {
+    // Missing IMAGE slot? (only if today and before 5PM, or future day)
+    if (!filledImageDays.has(dayKey) && (d > 0 || currentHour < imageSlotHour)) {
       log.info({ day: dayKey }, "image slot missing — generating photo post for Rexion");
       const result = await createContent({
         topic: "Aesthetic editorial photo post for REXION AI Career Platform — warm sunlit workspace, open laptop showing the REXION job dashboard, ceramic coffee mug, notebook, premium editorial warm cream aesthetic",
@@ -96,8 +102,8 @@ async function smartCreate() {
       return; // one generation per run cycle
     }
 
-    // Missing REEL slot? Generate a Rexion showcase/tips reel
-    if (!filledReelDays.has(dayKey)) {
+    // Missing REEL slot? (only if today and before 7PM, or future day)
+    if (!filledReelDays.has(dayKey) && (d > 0 || currentHour < reelSlotHour)) {
       log.info({ day: dayKey }, "reel slot missing — generating reel for Rexion");
       const result = await createContent({ ignoreQueue: true, bypassLimit: false });
       log.info({ result }, "auto reel generation done");
@@ -107,6 +113,8 @@ async function smartCreate() {
 
   log.info({ lookahead: lookAheadDays }, "all slots filled for next days — no generation needed");
 }
+
+export { smartCreate };
 
 const tasks: ScheduledTask[] = [
   cron.schedule("*/2 * * * *", intake),
@@ -119,11 +127,29 @@ const tasks: ScheduledTask[] = [
   cron.schedule("0 8 * * 1", guard("ideas", weeklyIdeas), { timezone: env.TIMEZONE }),
 ];
 
-const health = startHealthServer();
+const health = startHealthServer({
+  onPublishDue: guard("publish", publishDue),
+  onSmartCreate: guard("create", smartCreate),
+});
 
 async function main() {
   await ensureDirs();
   await recoverStuck();
+
+  // Reschedule any stale approved posts from >36 hours in the past so the queue is never blocked
+  try {
+    const staleCutoff = DateTime.now().setZone(env.TIMEZONE).minus({ hours: 36 }).toUTC().toISO()!;
+    const stalePosts = db
+      .prepare("SELECT id, kind FROM posts WHERE status = 'approved' AND scheduled_at < ?")
+      .all(staleCutoff) as { id: number; kind: string }[];
+    for (const s of stalePosts) {
+      const newSlot = nextSlot(s.kind as "IMAGE" | "REEL");
+      db.prepare("UPDATE posts SET scheduled_at = ? WHERE id = ?").run(newSlot, s.id);
+      log.warn({ post: s.id, newSlot }, "auto-rescheduled stale overdue post forward to next open slot");
+    }
+  } catch (e) {
+    log.warn({ err: errMsg(e) }, "stale queue cleanup check encountered error");
+  }
 
   const savedToken = getSetting("ig_access_token");
   if (savedToken && savedToken.trim()) {
