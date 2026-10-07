@@ -4,6 +4,7 @@ import { execFile } from "node:child_process";
 import { promisify } from "node:util";
 import path from "node:path";
 import { v2 as cloudinary } from "cloudinary";
+import ffmpegStatic from "ffmpeg-static";
 import { retry } from "./util.js";
 
 const run = promisify(execFile);
@@ -12,8 +13,13 @@ const VIDEO = new Set([".mp4", ".mov", ".m4v", ".mkv", ".webm"]);
 const IMAGE = new Set([".jpg", ".jpeg", ".png", ".webp"]);
 
 export function findBin(name: "ffmpeg" | "ffprobe"): string {
-  if (name === "ffmpeg" && process.env.FFMPEG_PATH && fsSync.existsSync(process.env.FFMPEG_PATH)) {
-    return process.env.FFMPEG_PATH;
+  if (name === "ffmpeg") {
+    if (process.env.FFMPEG_PATH && fsSync.existsSync(process.env.FFMPEG_PATH)) {
+      return process.env.FFMPEG_PATH;
+    }
+    if (ffmpegStatic && typeof ffmpegStatic === "string" && fsSync.existsSync(ffmpegStatic)) {
+      return ffmpegStatic;
+    }
   }
   if (name === "ffprobe" && process.env.FFPROBE_PATH && fsSync.existsSync(process.env.FFPROBE_PATH)) {
     return process.env.FFPROBE_PATH;
