@@ -99,6 +99,7 @@ async function smartCreate() {
         bypassLimit: false,
       });
       log.info({ result }, "auto image generation done");
+      await draftNew();
       return; // one generation per run cycle
     }
 
@@ -107,6 +108,7 @@ async function smartCreate() {
       log.info({ day: dayKey }, "reel slot missing — generating reel for Rexion");
       const result = await createContent({ ignoreQueue: true, bypassLimit: false });
       log.info({ result }, "auto reel generation done");
+      await draftNew();
       return;
     }
   }
@@ -128,8 +130,8 @@ const tasks: ScheduledTask[] = [
 ];
 
 const health = startHealthServer({
-  onPublishDue: guard("publish", publishDue),
-  onSmartCreate: guard("create", smartCreate),
+  onPublishDue: guard("publish", async () => { await draftNew(); return await publishDue(); }),
+  onSmartCreate: guard("create", async () => { await smartCreate(); await draftNew(); }),
 });
 
 async function main() {

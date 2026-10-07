@@ -1,0 +1,47 @@
+name: Daily Instagram Auto-Publisher
+
+on:
+  schedule:
+    # 9:00 AM IST (03:30 UTC) - Morning Queue Top-Up (Creates 5-day content buffer)
+    - cron: "30 3 * * *"
+    # 5:00 PM IST (11:30 UTC) - Photo Publishing Slot
+    - cron: "30 11 * * *"
+    # 7:00 PM IST (13:30 UTC) - Reel Publishing Slot
+    - cron: "30 13 * * *"
+  workflow_dispatch:
+    inputs:
+      action:
+        description: 'Action to trigger'
+        required: true
+        default: 'publish'
+        type: choice
+        options:
+          - publish
+          - create
+          - both
+
+jobs:
+  run-publisher:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Wake up Instagram Agent
+        run: |
+          echo "Waking up Instagram Agent instance..."
+          curl -s -m 45 https://insta-agent-ekqb.onrender.com/health || true
+
+      - name: Trigger Top-Up Queue Generation (Morning or On-Demand)
+        if: github.event.schedule == '30 3 * * *' || inputs.action == 'create' || inputs.action == 'both'
+        run: |
+          echo "Generating upcoming content buffer..."
+          curl -s -m 90 -X POST https://insta-agent-ekqb.onrender.com/cron/create || true
+
+      - name: Trigger Due Post Publishing (Afternoon, Evening or On-Demand)
+        if: github.event.schedule != '30 3 * * *' || inputs.action == 'publish' || inputs.action == 'both'
+        run: |
+          echo "Publishing due post..."
+          curl -s -m 60 -X POST https://insta-agent-ekqb.onrender.com/cron/publish || true
+
+      - name: Verify Queue Status
+        run: |
+          echo "Final Health and Queue Status:"
+          curl -s -m 30 https://insta-agent-ekqb.onrender.com/health

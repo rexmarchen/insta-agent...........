@@ -1,0 +1,21 @@
+name: 24/7 Render Keep-Alive (Never Sleep)
+
+on:
+  schedule:
+    # Run every 10 minutes to guarantee Render free-tier never sleeps
+    - cron: "*/10 * * * *"
+  workflow_dispatch: {}
+
+jobs:
+  keepalive:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Ping Render Service
+        run: |
+          echo "Pinging Instagram Agent on Render to prevent sleep..."
+          STATUS=$(curl -s -o /dev/null -w "%{http_code}" -m 20 https://insta-agent-ekqb.onrender.com/ping || echo "000")
+          echo "Ping response: $STATUS"
+          if [ "$STATUS" != "200" ]; then
+            echo "Waking up instance via /health..."
+            curl -s -m 45 https://insta-agent-ekqb.onrender.com/health || true
+          fi
