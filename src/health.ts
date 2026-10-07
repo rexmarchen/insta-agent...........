@@ -117,19 +117,21 @@ export function startHealthServer(handlers: HealthServerHandlers = {}) {
     log.info({ port: env.PORT }, "Production health and cron server listening on 0.0.0.0");
   });
 
-  // Built-in Render Free tier Keep-Alive pinger
-  // If Render provides RENDER_EXTERNAL_URL, self-ping /ping every 9 minutes to prevent idle sleep
-  const renderUrl = process.env.RENDER_EXTERNAL_URL;
+  // Built-in 24/7 Render Keep-Alive: Ping every 4 minutes to guarantee it never sleeps
+  const renderUrl = process.env.RENDER_EXTERNAL_URL || "https://insta-agent-ekqb.onrender.com";
   if (renderUrl) {
     const pingTarget = `${renderUrl.replace(/\/$/, "")}/ping`;
-    log.info({ pingTarget }, "Enabling automatic self-keepalive for Render");
+    log.info({ pingTarget }, "Enabling continuous 24/7 keep-alive for Render (every 4m)");
     setInterval(async () => {
       try {
-        await fetch(pingTarget, { signal: AbortSignal.timeout(10_000) });
+        const res = await fetch(pingTarget, { signal: AbortSignal.timeout(10_000) });
+        if (res.ok) {
+          log.info("24/7 Keep-alive ping sent successfully");
+        }
       } catch (err: any) {
-        log.warn({ err: err.message }, "Render self-keepalive ping failed");
+        log.warn({ err: err.message }, "Keep-alive ping attempt failed");
       }
-    }, 9 * 60 * 1000); // 9 minutes
+    }, 4 * 60 * 1000); // 4 minutes ensures Render's 15m idle timer never triggers
   }
 
   return server;
