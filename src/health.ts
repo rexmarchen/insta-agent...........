@@ -79,6 +79,7 @@ export function startHealthServer(handlers: HealthServerHandlers = {}) {
           .all() as { id: number; kind: string; status: string; scheduled_at: string }[];
 
         const nowIST = DateTime.now().setZone(env.TIMEZONE);
+        const generations = db.prepare("SELECT id, day, format, ok, error, created_at FROM generations ORDER BY id DESC LIMIT 5").all();
 
         const statusData = {
           ok: true,
@@ -96,6 +97,7 @@ export function startHealthServer(handlers: HealthServerHandlers = {}) {
               : null,
             scheduledUTC: p.scheduled_at,
           })),
+          recentGenerations: generations,
         };
 
         res.writeHead(200, { "Content-Type": "application/json" });
