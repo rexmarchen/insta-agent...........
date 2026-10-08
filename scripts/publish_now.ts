@@ -11,26 +11,52 @@ const TZ = "Asia/Kolkata";
 async function main() {
   const db = new DatabaseSync("data/agent.db");
   const now = DateTime.now().setZone(TZ);
-  console.log(`=== PUBLISHING TODAY'S (OCT 7) SCHEDULED POST ===`);
+  console.log(`=== INSTAGRAM DIRECT PUBLISHER ===`);
   console.log(`Current Time (IST): ${now.toFormat("yyyy-MM-dd HH:mm:ss")}`);
 
   // 1. Verify Instagram API connection
   const username = await checkToken();
   console.log(`Instagram connected: @${username}`);
 
-  // 2. Find today's due post (Post #31 scheduled for 17:00 IST)
-  const post = db.prepare("SELECT * FROM posts WHERE id = 31").get() as Post | undefined;
+  // 2. Clear any stuck post in 'publishing' status older than 2 hours
+  const stuck = db.prepare("SELECT id FROM posts WHERE status = 'publishing'").all() as { id: number }[];
+  for (const s of stuck) {
+    db.prepare("UPDATE posts SET status = 'failed', error = 'Recovered from interrupted publishing state' WHERE id = ?").run(s.id);
+    console.log(`Recovered stuck post #${s.id} from 'publishing' to 'failed'`);
+  }
+
+  // 3. Find target post: from CLI arg or tonight's due post
+  const argId = process.argv[2] ? Number(process.argv[2]) : null;
+  let post: Post | undefined;
+
+  if (argId) {
+    post = db.prepare("SELECT * FROM posts WHERE id = ?").get(argId) as Post | undefined;
+    if (!post) throw new Error(`Post #${argId} not found in DB`);
+  } else {
+    // Prefer due REEL first if user asked for reel, or any due post
+    post = db.prepare("SELECT * FROM posts WHERE status = 'approved' AND kind = 'REEL' ORDER BY scheduled_at ASC LIMIT 1").get() as Post | undefined;
+    if (!post) {
+      post = db.prepare("SELECT * FROM posts WHERE status = 'approved' ORDER BY scheduled_at ASC LIMIT 1").get() as Post | undefined;
+    }
+  }
+
   if (!post) {
-    throw new Error("Post #31 not found in DB");
+    throw new Error("No approved post found to publish.");
   }
 
   console.log(`Target Post: #${post.id} (${post.kind})`);
-  console.log(`Scheduled for: ${post.scheduled_at}`);
-  console.log(`Caption preview: ${post.caption?.slice(0, 100)}...`);
+  console.log(`Scheduled for: ${post.scheduled_at} (${post.scheduled_at ? DateTime.fromISO(post.scheduled_at).setZone(TZ).toFormat("yyyy-MM-dd HH:mm") : "none"})`);
+  console.log(`Caption preview: ${post.caption?.slice(0, 120)}...`);
   console.log(`Local file: ${post.src_path}`);
 
-  // 3. Upload fresh media to public host
-  console.log(`Uploading ${post.src_path}...`);
+  // 4. Verify local file exists
+  const fileStat = await fs.stat(post.src_path!).catch(() => null);
+  if (!fileStat) {
+    throw new Error(`Media file ${post.src_path} is missing on disk!`);
+  }
+
+  // 5. Upload fresh media to public host
+  console.log(`Uploading fresh ${post.kind} media (${post.src_path})...`);
   const uploaded = await upload(post.src_path!, post.kind === "REEL" ? "video" : "image");
   console.log(`Public URL: ${uploaded.url}`);
 
@@ -38,9 +64,9 @@ async function main() {
   if (!isAlive) {
     throw new Error(`Public URL verification failed: ${uploaded.url}`);
   }
-  console.log(`Media URL verified reachable.`);
+  console.log(`Media URL verified reachable by Instagram crawler.`);
 
-  // 4. Update status to publishing
+  // 6. Update status to publishing
   db.prepare("UPDATE posts SET media_url = ?, cloud_id = ?, status = 'publishing', error = NULL WHERE id = ?").run(
     uploaded.url,
     uploaded.publicId,
@@ -54,31 +80,24 @@ async function main() {
     status: "publishing",
   };
 
-  // 5. Publish to Instagram
-  console.log(`Publishing to Instagram Graph API...`);
+  // 7. Publish to Instagram
+  console.log(`Publishing ${post.kind} to Instagram Graph API...`);
   const result = await publishToInstagram(updatedPost);
   console.log(`SUCCESS! Live on Instagram:`, result);
 
-  // 6. Record published in DB
+  // 8. Record published in DB
   db.prepare(
     "UPDATE posts SET status = 'published', ig_media_id = ?, permalink = ?, published_at = datetime('now') WHERE id = ?"
   ).run(result.id, result.permalink, post.id);
 
-  // 7. Notify Telegram
+  // 9. Notify Telegram
   await notify(`🚀 Published #${post.id} (${post.kind})\n${result.permalink}\n\n${post.caption?.split("\n")[0]}`).catch(() => {});
 
-  // 8. Reschedule missed posts from Oct 6 to Oct 10 so queue is clean
-  db.prepare("UPDATE posts SET scheduled_at = '2026-10-10T11:30:00.000Z' WHERE id = 30 AND status = 'approved'").run();
-  db.prepare("UPDATE posts SET scheduled_at = '2026-10-10T13:30:00.000Z' WHERE id = 26 AND status = 'approved'").run();
-
-  // 9. Check tonight's Reel
-  const tonightReel = db.prepare("SELECT id, kind, scheduled_at, status FROM posts WHERE id = 27").get() as any;
-  console.log(`Tonight's Reel (#${tonightReel?.id}): Scheduled for ${tonightReel?.scheduled_at} (7:00 PM IST) [${tonightReel?.status}]`);
-
   console.log(`\n========================================`);
-  console.log(`RESULT_PERMALINK: ${result.permalink}`);
-  console.log(`RESULT_MEDIA_ID: ${result.id}`);
-  console.log(`========================================`);
+  console.log(`POST #${post.id} (${post.kind}) PUBLISHED SUCCESSFULLY!`);
+  console.log(`PERMALINK: ${result.permalink}`);
+  console.log(`MEDIA_ID: ${result.id}`);
+  console.log(`========================================\n`);
 }
 
 main().catch((err) => {

@@ -18,7 +18,7 @@ const guard = (name: string, fn: () => Promise<unknown>) => async () => {
   if (running.has(name)) return; // never overlap the same job
   running.add(name);
   try {
-    await fn();
+    return await fn();
   } catch (e) {
     log.error({ job: name, err: errMsg(e) }, "job failed");
     if (e instanceof AuthError) {
