@@ -138,9 +138,9 @@ async function main() {
   await ensureDirs();
   await recoverStuck();
 
-  // Reschedule any stale approved posts from >36 hours in the past so the queue is never blocked
+  // Reschedule any stale approved posts from >6 hours in the past so the queue is never blocked
   try {
-    const staleCutoff = DateTime.now().setZone(env.TIMEZONE).minus({ hours: 36 }).toUTC().toISO()!;
+    const staleCutoff = DateTime.now().setZone(env.TIMEZONE).minus({ hours: 6 }).toUTC().toISO()!;
     const stalePosts = db
       .prepare("SELECT id, kind FROM posts WHERE status = 'approved' AND scheduled_at < ?")
       .all(staleCutoff) as { id: number; kind: string }[];

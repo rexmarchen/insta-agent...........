@@ -104,18 +104,15 @@ export async function publishDue(): Promise<{ published?: { id: number; kind: st
   if (claim.changes !== 1) return { skipped: `Post #${due.id} already being processed.` };
 
   try {
-    // If the media URL expired (common with temporary file hosting) or is unreachable, re-upload from local disk
+    // If the local file exists, always upload fresh media so Instagram crawler never encounters expired temporary links
     if (due.src_path) {
       const exists = await fs.stat(due.src_path).then(() => true).catch(() => false);
       if (exists) {
-        const isAlive = await verifyMediaUrl(due.media_url);
-        if (!isAlive) {
-          log.warn({ post: due.id, oldUrl: due.media_url }, "media_url expired or unreachable, re-uploading from local file");
-          const fresh = await upload(due.src_path, due.kind === "REEL" ? "video" : "image");
-          db.prepare("UPDATE posts SET media_url = ?, cloud_id = ? WHERE id = ?").run(fresh.url, fresh.publicId, due.id);
-          due.media_url = fresh.url;
-          due.cloud_id = fresh.publicId;
-        }
+        log.info({ post: due.id, kind: due.kind }, "uploading fresh media for Instagram publication");
+        const fresh = await upload(due.src_path, due.kind === "REEL" ? "video" : "image");
+        db.prepare("UPDATE posts SET media_url = ?, cloud_id = ? WHERE id = ?").run(fresh.url, fresh.publicId, due.id);
+        due.media_url = fresh.url;
+        due.cloud_id = fresh.publicId;
       } else {
         const isAlive = await verifyMediaUrl(due.media_url);
         if (!isAlive) {
